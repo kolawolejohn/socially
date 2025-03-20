@@ -55,7 +55,7 @@ jobs:
       - name: Add VPS SSH host key to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H 69.62.107.249 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 69.62.107.240 >> ~/.ssh/known_hosts
 
       - name: Set up SSH key for authentication
         run: |
@@ -66,7 +66,7 @@ jobs:
       - name: SSH into VPS and deploy
         uses: appleboy/ssh-action@v0.1.5
         with:
-          host: 69.62.107.249
+          host: 69.62.107.240
           username: root
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           port: 22
@@ -78,5 +78,5 @@ jobs:
 
       - name: Debug SSH connection (optional)
         run: |
-          ssh -v -i ~/.ssh/id_rsa root@69.62.107.249 "echo 'SSH connection successful'"
+          ssh -v -i ~/.ssh/id_rsa root@69.62.107.240 "echo 'SSH connection successful'"
         continue-on-error: true

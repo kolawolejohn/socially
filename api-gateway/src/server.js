@@ -21,8 +21,8 @@ app.use(cors())
 app.use(express.json())
 
 const rateLimitOptions = rateLimit({
-  windowMs: process.env.RATE_LIMIT_WINDOW_MS,
-  max: process.env.RATE_LIMIT_MAX, //time limit for rate limit in milliseconds
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS),
+  max: parseInt(process.env.RATE_LIMIT_MAX), //time limit for rate limit in milliseconds
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {

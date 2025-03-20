@@ -26,8 +26,8 @@ app.use(cors())
 app.use(express.json())
 
 const rateLimitOptions = rateLimit({
-  windowMs: process.env.RATE_LIMIT_WINDOW_MS,
-  max: process.env.RATE_LIMIT_MAX,
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS),
+  max: parseInt(process.env.RATE_LIMIT_MAX),
   standardHeaders: true,
   legacyHeaders: false,
   store: new RedisStore({
@@ -75,6 +75,4 @@ async function startServer() {
 
 startServer()
 
-// process.on('unhandledRejection', (reason, promise) => {
-//   logger.error(`Unhandled Rejection at`, promise, 'reason:', reason)
-// })
+

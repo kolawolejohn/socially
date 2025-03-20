@@ -20,6 +20,8 @@ mongoose
   .catch((error) => logger.error('Mongo connection error', error))
 
 const redisClient = new Redis(process.env.REDIS_URL)
+redisClient.on('connect', () => logger.info('Connected to Redis'))
+redisClient.on('error', (err) => logger.error('Redis error', err))
 
 app.use(helmet())
 app.use(cors())
@@ -35,11 +37,16 @@ app.use((req, res, next) => {
 const rateLimiter = new RateLimiterRedis({
   storeClient: redisClient,
   keyPrefix: 'middleware',
-  points: process.env.REDIS_RATE_LIMIT_POINT, //number of request
-  duration: process.env.REDIS_RATE_LIMIT_DURATION, // time
+  points: parseInt(process.env.REDIS_RATE_LIMIT_POINT), //number of request
+  duration: parseInt(process.env.REDIS_RATE_LIMIT_DURATION), // time
 })
 
 app.use((req, res, next) => {
+  if (!req.ip) {
+    logger.error('Missing IP address for rate limiting')
+    return res.status(500).json({ success: false, message: 'Server error' })
+  }
+
   rateLimiter
     .consume(req.ip)
     .then(() => next())
@@ -54,13 +61,13 @@ app.use((req, res, next) => {
 
 //Ip bases rate limiting for sensitive endpoints
 const sensitiveEndpointsLimiter = rateLimit({
-  windowMs: process.env.RATE_LIMIT_WINDOW_MS,
-  max: process.env.RATE_LIMIT_MAX, //time limit for rate limit in milliseconds
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS),
+  max: parseInt(process.env.RATE_LIMIT_MAX), //time limit for rate limit in milliseconds
   standardHeaders: true,
   legacyHeaders: false,
-   store: new RedisStore({
-      sendCommand: (...args) => redisClient.call(...args),
-    }),
+  store: new RedisStore({
+    sendCommand: (...args) => redisClient.call(...args),
+  }),
   handler: (req, res) => {
     logger.warn(`Sensitive endpoint rate limit exceeded for IP: ${req.ip}`)
     res.status(429).json({

@@ -64,17 +64,24 @@ jobs:
             git pull origin main
 
             # Store GitHub Secrets into .env files for each service
-            echo "${{ secrets.API_GATEWAY_ENV }}" > api-gateway/.env
-            echo "${{ secrets.IDENTITY_SERVICE_ENV }}" > identity-service/.env
-            echo "${{ secrets.POST_SERVICE_ENV }}" > post-service/.env
-            echo "${{ secrets.MEDIA_SERVICE_ENV }}" > media-service/.env
-            echo "${{ secrets.SEARCH_SERVICE_ENV }}" > search-service/.env
+            echo -e "${{ secrets.API_GATEWAY_ENV }}" | tee api-gateway/.env
+            echo -e "${{ secrets.IDENTITY_SERVICE_ENV }}" | tee identity-service/.env
+            echo -e "${{ secrets.POST_SERVICE_ENV }}" | tee post-service/.env
+            echo -e "${{ secrets.MEDIA_SERVICE_ENV }}" | tee media-service/.env
+            echo -e "${{ secrets.SEARCH_SERVICE_ENV }}" | tee search-service/.env
+
+            # Verify .env files before running Docker
+            echo "🔍 Checking .env files..."
+            for service in api-gateway identity-service post-service media-service search-service; do
+              echo "📂 Contents of $service/.env:"
+              ls -la $service
+              cat $service/.env || echo "❌ $service/.env is missing or empty!"
+            done
 
             # Restart services
+            echo "🔧 Checking Docker Compose configuration..."
+            docker-compose config || { echo "❌ Invalid docker-compose configuration!"; exit 1; }
+
+            echo "🚀 Restarting Docker services..."
             docker-compose down
             docker-compose up -d --remove-orphans
-
-      - name: Debug SSH connection (optional)
-        run: |
-          ssh -v -i ~/.ssh/id_rsa root@69.62.107.240 "echo 'SSH connection successful'"
-        continue-on-error: true

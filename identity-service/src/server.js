@@ -58,14 +58,14 @@ const sensitiveEndpointsLimiter = rateLimit({
   max: process.env.RATE_LIMIT_MAX, //time limit for rate limit in milliseconds
   standardHeaders: true,
   legacyHeaders: false,
+   store: new RedisStore({
+      sendCommand: (...args) => redisClient.call(...args),
+    }),
   handler: (req, res) => {
     logger.warn(`Sensitive endpoint rate limit exceeded for IP: ${req.ip}`)
     res.status(429).json({
       success: false,
       message: 'Too many requests',
-    })
-    store: new RedisStore({
-      sendCommand: (...args) => redisClient.call(...args),
     })
   },
 })

@@ -22,6 +22,17 @@ jobs:
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
 
+      - name: Create .env files for services
+        run: |
+          echo "${{ secrets.API_GATEWAY_ENV }}" > api-gateway/.env
+          echo "${{ secrets.IDENTITY_SERVICE_ENV }}" > identity-service/.env
+          echo "${{ secrets.POST_SERVICE_ENV }}" > post-service/.env
+          echo "${{ secrets.MEDIA_SERVICE_ENV }}" > media-service/.env
+          echo "${{ secrets.SEARCH_SERVICE_ENV }}" > search-service/.env
+
+          # Debug: Check if .env files exist
+          ls -la api-gateway/.env identity-service/.env post-service/.env media-service/.env search-service/.env
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -44,7 +55,7 @@ jobs:
       - name: Add VPS SSH host key to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H 69.62.107.240 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 69.62.107.249 >> ~/.ssh/known_hosts
 
       - name: Set up SSH key for authentication
         run: |
@@ -52,36 +63,20 @@ jobs:
           echo "${{ secrets.VPS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      - name: Deploy application to VPS
+      - name: SSH into VPS and deploy
         uses: appleboy/ssh-action@v0.1.5
         with:
-          host: 69.62.107.240
+          host: 69.62.107.249
           username: root
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           port: 22
           script: |
             cd /home/root/projects/socially-node-micro-service/socially
-            git pull origin main
-
-            # Store GitHub Secrets into .env files for each service
-            echo -e "${{ secrets.API_GATEWAY_ENV }}" | tee api-gateway/.env
-            echo -e "${{ secrets.IDENTITY_SERVICE_ENV }}" | tee identity-service/.env
-            echo -e "${{ secrets.POST_SERVICE_ENV }}" | tee post-service/.env
-            echo -e "${{ secrets.MEDIA_SERVICE_ENV }}" | tee media-service/.env
-            echo -e "${{ secrets.SEARCH_SERVICE_ENV }}" | tee search-service/.env
-
-            # Verify .env files before running Docker
-            echo "🔍 Checking .env files..."
-            for service in api-gateway identity-service post-service media-service search-service; do
-              echo "📂 Contents of $service/.env:"
-              ls -la $service
-              cat $service/.env || echo "❌ $service/.env is missing or empty!"
-            done
-
-            # Restart services
-            echo "🔧 Checking Docker Compose configuration..."
-            docker-compose config || { echo "❌ Invalid docker-compose configuration!"; exit 1; }
-
-            echo "🚀 Restarting Docker services..."
+            git pull origin master
             docker-compose down
-            docker-compose up -d --remove-orphans
+            docker-compose up -d
+
+      - name: Debug SSH connection (optional)
+        run: |
+          ssh -v -i ~/.ssh/id_rsa root@69.62.107.249 "echo 'SSH connection successful'"
+        continue-on-error: true
